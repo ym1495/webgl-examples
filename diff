@@ -1,0 +1,114 @@
+--- example2.html	2018-02-01 11:58:06.117386100 -0500
++++ example3.html	2018-02-01 11:57:58.631955000 -0500
+@@ -22,27 +22,34 @@
+ // 
+ var vertexSource = `#version 300 es
+ 
+-  // Specify the vertex positions hard-coded
+-  vec2 positions[3] = vec2[](
+-    vec2( 0.0,  0.5),
+-    vec2( 0.5, -0.5),
+-    vec2(-0.5, -0.5)
+-  );
++  // This variable will be set for each vertex that this shader program is executed on
++  in vec2 in_position;
++
++  // Specifies the varying variable that stores the position of the vertex.  The value of
++  // this variable will be interpolated in the fragment shader
++  out vec2 position;
+ 
+   void main() {
+     // gl_Position is a library-defined variable that needs to be set by the vertex shader
+-    gl_Position = vec4(positions[gl_VertexID], 0.0, 1.0);
++    gl_Position = vec4(in_position, 0.0, 1.0);
++
++    // Use the position normalized between [0,1] as the varying variable
++    // The positions are -0.5 or 0.5, so if we add 0.5 to all coordinates, we get in [0,1]
++    position = in_position + vec2(0.5, 0.5);
+   }
+ `;
+ 
+ var fragmentSource = `#version 300 es
+ 
++  // Incoming varying variable from the vertex shader
++  in lowp vec2 position;
++
+   // Define the output variable as a low precision vec4
+   out lowp vec4 color;
+ 
+   void main() {
+-    // Every fragment shall be completely white
+-    color = vec4(1.0, 1.0, 1.0, 1.0);
++    // Using the position as the red and green components of the color
++    color = vec4(position, 1.0, 1.0);
+   }
+ `;
+ 
+@@ -113,6 +120,38 @@
+ 
+ 
+   //
++  //   Create the buffers
++  //
++  // Create a vertex buffer object (VBO) storing the vertex positions
++  var positionBuffer = gl.createBuffer();
++
++  // Binding the buffer as the current array buffer to be modified
++  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
++
++  // Specify the positions as a linear array
++  var positions = [
++     0.0,  0.5,
++     0.5, -0.5,
++    -0.5, -0.5
++  ];
++
++  // Copy the data into the vertex buffer on the GPU
++  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
++
++  // It's always a good idea to reset the current buffer
++  gl.bindBuffer(gl.ARRAY_BUFFER, null);
++
++
++
++  //
++  //   Attribute positions
++  //
++  // Getting the location of the 'in vec2 position' of the vertex shader
++  var positionAttributeLocation = gl.getAttribLocation(program, "in_position");
++
++
++
++  //
+   //   Rendering
+   // 
+ 
+@@ -125,6 +164,19 @@
+   // We use the program that was created above
+   gl.useProgram(program);
+ 
++  // Bind the vertex buffer
++  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
++  gl.vertexAttribPointer(
++    positionAttributeLocation,
++    2,                                          // Number of Components
++    gl.FLOAT,                                   // Type of data in the buffer
++    false,                                      // whether components should be normalized
++    0,                                          // stride between objects
++    0                                           // offset to value
++  );
++  // Every vertex attribute array that we are using has to be enabled before it can be used
++  gl.enableVertexAttribArray(positionAttributeLocation);
++
+   // We want to draw a triangle with 3 vertices
+   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 3);
+ }
+@@ -132,7 +184,7 @@
+ </script>
+ 
+ <body onload="main();">
+-  <p>This example introduces shaders with hardcoded vertex positions to render a white triangle.</p>
++  <p>Adding vertex buffer objects (VBO) to transfer data from the CPU to the GPU;  also adding data transfer between vertex and fragment shaders</p>
+   <p id="error"></p>
+   <canvas id="glCanvas" width="640" height="480"></canvas>
+ </body>
