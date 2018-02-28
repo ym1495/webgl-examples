@@ -115,19 +115,19 @@ function render(gl, program, buffers, attributeLocations) {
   // Every vertex attribute array that we are using has to be enabled before it can be used
   gl.enableVertexAttribArray(attributeLocations.position);
 
-  // This function actually draws the triangle
-  var drawTriangle = function(translation) {
-    // We want to draw a triangle with 3 vertices
-    gl.drawArrays(gl.TRIANGLES, 0, 3);
-  };
+//   // This function actually draws the triangle
+//   var drawTriangle = function(translation) {
+//     // We want to draw a triangle with 3 vertices
+//     gl.drawArrays(gl.TRIANGLES, 0, 3);
+//   };
 
 
 
-  //
-  //   Rendering
-  //
+//   //
+//   //   Rendering
+//   //
 
-  drawTriangle();
+//   drawTriangle();
 }
 
 
@@ -168,7 +168,20 @@ function main() {
   gl.attachShader(program, fragmentShader);
   // Link the Program Object
   gl.linkProgram(program);
+  
+  ///////////////////////Yurui//////////////////////////
+  // make sure you have vertex, vertex normal, and texture coordinate
+  // attributes located in your shaders and attach them to the shader program
+  program.vertexPositionAttribute = gl.getAttribLocation(program, "aVertexPosition");
+  gl.enableVertexAttribArray(program.vertexPositionAttribute);
 
+  program.vertexNormalAttribute = gl.getAttribLocation(program, "aVertexNormal");
+  gl.enableVertexAttribArray(program.vertexNormalAttribute);
+
+  program.textureCoordAttribute = gl.getAttribLocation(program, "aTextureCoord");
+  gl.enableVertexAttribArray(program.textureCoordAttribute);
+
+  /////////////////////////////////////////////////
   // Check for linking errors
   if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
     postError('Failed to initialize shader program with error: ' + gl.getProgramInfoLog(program));
@@ -178,23 +191,52 @@ function main() {
 
 
 
-  //
-  //   Create the buffers
-  //
+//   //
+//   //   Create the buffers
+//   //
 
-  // Create a vertex buffer object (VBO) storing the vertex positions
-  var positionBuffer = gl.createBuffer();
+//   // Create a vertex buffer object (VBO) storing the vertex positions
+//   var positionBuffer = gl.createBuffer();
 
-  // Binding the buffer as the current array buffer to be modified
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+//   // Binding the buffer as the current array buffer to be modified
+//   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 
-  // Specify the positions as a linear array
-  var positions = [
-     0.0,   0.5,
-     0.5, -0.25,
-    -0.5, -0.25
-  ];
+//   // Specify the positions as a linear array
+//   var positions = [
+//      0.0,   0.5,
+//      0.5, -0.25,
+//     -0.5, -0.25
+//   ];
+//////////////////////Yurui/////////////////////////////////////////////
+    // create and initialize the vertex, vertex normal, and texture coordinate buffers
+  // and save on to the mesh object
+  OBJ.initMeshBuffers(gl, mesh);
 
+  // now to render the mesh
+  gl.bindBuffer(gl.ARRAY_BUFFER, mesh.vertexBuffer);
+  gl.vertexAttribPointer(program.vertexPositionAttribute, mesh.vertexBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+  // it's possible that the mesh doesn't contain
+  // any texture coordinates (e.g. suzanne.obj in the development branch).
+  // in this case, the texture vertexAttribArray will need to be disabled
+  // before the call to drawElements
+  if(!mesh.textures.length){
+    gl.disableVertexAttribArray(program.textureCoordAttribute);
+  }
+  else{
+    // if the texture vertexAttribArray has been previously
+    // disabled, then it needs to be re-enabled
+    gl.enableVertexAttribArray(program.textureCoordAttribute);
+    gl.bindBuffer(gl.ARRAY_BUFFER, mesh.textureBuffer);
+    gl.vertexAttribPointer(program.textureCoordAttribute, mesh.textureBuffer.itemSize, gl.FLOAT, false, 0, 0);
+  }
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, mesh.normalBuffer);
+  gl.vertexAttribPointer(program.vertexNormalAttribute, mesh.normalBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, model.mesh.indexBuffer);
+  gl.drawElements(gl.TRIANGLES, model.mesh.indexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+  //////////////////////////////////////////////////////////////////////////////////////////
   // Copy the data into the vertex buffer on the GPU
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 
