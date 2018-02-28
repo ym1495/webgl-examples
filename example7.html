@@ -306,9 +306,9 @@ function render(gl, program, buffers, attributeLocations, uniformLocations, text
 window.onload = function (){
     OBJ.downloadMeshes({
         'gadget': 'ds_ga_3001_017_opengl_model.obj'
-    }, main);
+    }, main(meshes));
 // Main function to be executed after the page has been loaded
-function main() {
+function main(meshes) {
   // Get the canvas object from the main document
   var canvas = document.querySelector("#glCanvas");
 
@@ -321,7 +321,7 @@ function main() {
     return;
   }
 /////////////////////////Yurui////////////////////////
-  var mesh = new OBJ.Mesh("ds_ga_3001_017_opengl_model.obj");
+  var mesh = meshes;
 ///////////////////////////////////////////////////////
   //
   //   Initialize the shader program
