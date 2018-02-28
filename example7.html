@@ -272,18 +272,18 @@ function render(gl, program, buffers, attributeLocations, uniformLocations, text
   gl.uniform1i(uniformLocations.texture, 0);
 
   // This function actually draws the triangles with the provided model matrix
-  var drawTriangle = function(modelMatrix) {
-    // Set the model matrix uniform
-    gl.uniformMatrix4fv(uniformLocations.modelMatrix, false, modelMatrix);
+//   var drawTriangle = function(modelMatrix) {
+//     // Set the model matrix uniform
+//     gl.uniformMatrix4fv(uniformLocations.modelMatrix, false, modelMatrix);
 
-    // We want to draw 4 triangles with 3 vertices each
-    gl.drawElements(
-      gl.TRIANGLES,
-      4 * 3,
-      gl.UNSIGNED_BYTE,   // storage type of the element array buffer
-      0                   // offset into the buffer
-    );
-  };
+//     // We want to draw 4 triangles with 3 vertices each
+//     gl.drawElements(
+//       gl.TRIANGLES,
+//       4 * 3,
+//       gl.UNSIGNED_BYTE,   // storage type of the element array buffer
+//       0                   // offset into the buffer
+//     );
+//   };
 
 
 
@@ -291,15 +291,15 @@ function render(gl, program, buffers, attributeLocations, uniformLocations, text
   //   Rendering
   //
 
-  // Create the model matrix
-  var modelMatrix = mat4.create();
+//   // Create the model matrix
+//   var modelMatrix = mat4.create();
 
-  mat4.rotate(modelMatrix, modelMatrix, parameters.rotation, [0, 0, 1]);
-  mat4.rotate(modelMatrix, modelMatrix, 0.43 * parameters.rotation, [0, 1, 0]);
-  mat4.rotate(modelMatrix, modelMatrix, 0.31 * parameters.rotation, [1, 0, 0]);
+//   mat4.rotate(modelMatrix, modelMatrix, parameters.rotation, [0, 0, 1]);
+//   mat4.rotate(modelMatrix, modelMatrix, 0.43 * parameters.rotation, [0, 1, 0]);
+//   mat4.rotate(modelMatrix, modelMatrix, 0.31 * parameters.rotation, [1, 0, 0]);
 
-  // Draw the triangle
-  drawTriangle(modelMatrix);
+//   // Draw the triangle
+//   drawTriangle(modelMatrix);
 }
 
 
@@ -317,9 +317,9 @@ function main() {
     postError("Error initializing WebGL2 context");
     return;
   }
-
-
-
+/////////////////////////Yurui////////////////////////
+  var mesh = new OBJ.Mesh("ds_ga_3001_017_opengl_model.obj");
+///////////////////////////////////////////////////////
   //
   //   Initialize the shader program
   //
@@ -335,9 +335,22 @@ function main() {
 
   // Create the ProgramObject
   var program = gl.createProgram();
-  // Attach the vertex and fragment shaders to the program object
-  gl.attachShader(program, vertexShader);
-  gl.attachShader(program, fragmentShader);
+  //////////////////////Yurui////////////////////////////////
+  // make sure you have vertex, vertex normal, and texture coordinate
+  // attributes located in your shaders and attach them to the shader program
+  program.vertexPositionAttribute = gl.getAttribLocation(program, "aVertexPosition");
+  gl.enableVertexAttribArray(program.vertexPositionAttribute);
+
+  program.vertexNormalAttribute = gl.getAttribLocation(program, "aVertexNormal");
+  gl.enableVertexAttribArray(program.vertexNormalAttribute);
+
+  program.textureCoordAttribute = gl.getAttribLocation(program, "aTextureCoord");
+  gl.enableVertexAttribArray(program.textureCoordAttribute);
+
+  ///////////////////////////////////////////////////////////
+//   // Attach the vertex and fragment shaders to the program object
+//   gl.attachShader(program, vertexShader);
+//   gl.attachShader(program, fragmentShader);
   // Link the Program Object
   gl.linkProgram(program);
 
@@ -353,93 +366,122 @@ function main() {
   //
   //   Create the buffers
   //
+///////////////////////////Yurui///////////////////////
+  // create and initialize the vertex, vertex normal, and texture coordinate buffers
+  // and save on to the mesh object
+  OBJ.initMeshBuffers(gl, mesh);
 
-  // Create a vertex buffer object (VBO) storing the vertex positions
-  var positionBuffer = gl.createBuffer();
+  // now to render the mesh
+  gl.bindBuffer(gl.ARRAY_BUFFER, mesh.vertexBuffer);
+  gl.vertexAttribPointer(program.vertexPositionAttribute, mesh.vertexBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
-  // Binding the buffer as the current array buffer to be modified
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+  // it's possible that the mesh doesn't contain
+  // any texture coordinates (e.g. suzanne.obj in the development branch).
+  // in this case, the texture vertexAttribArray will need to be disabled
+  // before the call to drawElements
+  if(!mesh.textures.length){
+    gl.disableVertexAttribArray(program.textureCoordAttribute);
+  }
+  else{
+    // if the texture vertexAttribArray has been previously
+    // disabled, then it needs to be re-enabled
+    gl.enableVertexAttribArray(program.textureCoordAttribute);
+    gl.bindBuffer(gl.ARRAY_BUFFER, mesh.textureBuffer);
+    gl.vertexAttribPointer(program.textureCoordAttribute, mesh.textureBuffer.itemSize, gl.FLOAT, false, 0, 0);
+  }
 
-  // Specify the positions as a linear array
-  // 
-  // Building a d4
-  // 
-  //       top
-  //        o
-  //       /.\
-  //      / . \
-  //     /  o  \  <----  back
-  //    / .   . \
-  //   o---------o
-  //  left       right
-  // 
-  var positions = [
-     0.0,  0.5,  0.0,    // top
-     0.5, -0.5, -0.5,    // right
-    -0.5, -0.5, -0.5,    // left
-     0.0, -0.5,  0.5,    // back
-  ];
+  gl.bindBuffer(gl.ARRAY_BUFFER, mesh.normalBuffer);
+  gl.vertexAttribPointer(program.vertexNormalAttribute, mesh.normalBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
-  // Copy the data into the vertex buffer on the GPU
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, model.mesh.indexBuffer);
+  gl.drawElements(gl.TRIANGLES, model.mesh.indexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+  ///////////////////////////////////////////////////////////
+//   // Create a vertex buffer object (VBO) storing the vertex positions
+//   var positionBuffer = gl.createBuffer();
 
+//   // Binding the buffer as the current array buffer to be modified
+//   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 
+//   // Specify the positions as a linear array
+//   // 
+//   // Building a d4
+//   // 
+//   //       top
+//   //        o
+//   //       /.\
+//   //      / . \
+//   //     /  o  \  <----  back
+//   //    / .   . \
+//   //   o---------o
+//   //  left       right
+//   // 
+//   var positions = [
+//      0.0,  0.5,  0.0,    // top
+//      0.5, -0.5, -0.5,    // right
+//     -0.5, -0.5, -0.5,    // left
+//      0.0, -0.5,  0.5,    // back
+//   ];
 
-  // Create a vertex buffer object storing the color information
-  var colorBuffer = gl.createBuffer();
-
-  // Binding the buffer as the current array buffer to be modified
-  gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-
-  var colors = [
-    0.75, 0.00, 0.00, // top
-    0.00, 0.75, 0.00, // right
-    0.00, 0.00, 0.75, // left
-    0.45, 0.45, 0.45, // back
-  ];
-
-  // Copy the data into the vertex buffer on the GPU
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
-
-
-
-  // Create a vertex buffer object storing texture coordinates
-  var textureCoordinateBuffer = gl.createBuffer();
-
-  // Binding the buffer as the current array buffer to be modified
-  gl.bindBuffer(gl.ARRAY_BUFFER, textureCoordinateBuffer);
-
-  var textureCoordinates = [
-    0.0, 0.0, // top
-    1.0, 0.0, // right
-    0.0, 1.0, // left
-    1.0, 1.0, // back
-  ];
-
-  // Copy the data into the vertex buffer on the GPU
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoordinates), gl.STATIC_DRAW);
+//   // Copy the data into the vertex buffer on the GPU
+//   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 
 
-  // It's always a good idea to reset the current buffer
-  gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+//   // Create a vertex buffer object storing the color information
+//   var colorBuffer = gl.createBuffer();
+
+//   // Binding the buffer as the current array buffer to be modified
+//   gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+
+//   var colors = [
+//     0.75, 0.00, 0.00, // top
+//     0.00, 0.75, 0.00, // right
+//     0.00, 0.00, 0.75, // left
+//     0.45, 0.45, 0.45, // back
+//   ];
+
+//   // Copy the data into the vertex buffer on the GPU
+//   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
 
 
-  // Create an element array buffer to store the indices to vertices
-  var elementArrayBuffer = gl.createBuffer();
+
+//   // Create a vertex buffer object storing texture coordinates
+//   var textureCoordinateBuffer = gl.createBuffer();
+
+//   // Binding the buffer as the current array buffer to be modified
+//   gl.bindBuffer(gl.ARRAY_BUFFER, textureCoordinateBuffer);
+
+//   var textureCoordinates = [
+//     0.0, 0.0, // top
+//     1.0, 0.0, // right
+//     0.0, 1.0, // left
+//     1.0, 1.0, // back
+//   ];
+
+//   // Copy the data into the vertex buffer on the GPU
+//   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoordinates), gl.STATIC_DRAW);
+
+
+//   // It's always a good idea to reset the current buffer
+//   gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+
+//   // Create an element array buffer to store the indices to vertices
+//   var elementArrayBuffer = gl.createBuffer();
   
-  // Binding the buffer as the current element array buffer to be modified
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementArrayBuffer);
+//   // Binding the buffer as the current element array buffer to be modified
+//   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementArrayBuffer);
 
-  var indices = [
-    // Front 
-    0, 1, 2,
-    // Left
-    0, 2, 3,
-    // Right
-    0, 3, 1,
-    // Bottom
-    3, 2, 1
-  ];
+//   var indices = [
+//     // Front 
+//     0, 1, 2,
+//     // Left
+//     0, 2, 3,
+//     // Right
+//     0, 3, 1,
+//     // Bottom
+//     3, 2, 1
+//   ];
 
   // Copy the data into the vertex buffer on the GPU as 8-bit unsigned integers
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint8Array(indices), gl.STATIC_DRAW);
@@ -475,7 +517,7 @@ function main() {
   //
 
   // Loading the texture
-  var texture = loadTexture(gl, "texture.jpg");
+  var texture = loadTexture(gl, "ds_ga_3001_017_opengl_texture.jpg");
 
 
 
